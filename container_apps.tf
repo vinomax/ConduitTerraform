@@ -40,3 +40,28 @@ resource "azapi_resource" "aca" {
     }
   })
 }
+resource "azurerm_log_analytics_workspace" "log_storage" {
+  name                = "law-aca-terraform"
+  resource_group_name = azurerm_resource_group.rg_name.name
+  location            = azurerm_resource_group.rg_name.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 90
+}
+resource "azapi_resource" "aca_log" {
+  type      = "Microsoft.App/managedEnvironments@2022-03-01"
+  parent_id = azurerm_resource_group.rg_name.id
+  location  = azurerm_resource_group.rg_name.location
+  name      = "aca-env-terraform"
+  
+  body   = jsonencode({
+    properties = {
+      appLogsConfiguration = {
+        destination               = "log-analytics"
+        logAnalyticsConfiguration = {
+          customerId = azurerm_log_analytics_workspace.log_storage.workspace_id
+          sharedKey  = azurerm_log_analytics_workspace.log_storage.primary_shared_key
+        }
+      }
+    }
+ })
+}
