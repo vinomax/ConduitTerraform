@@ -3,7 +3,18 @@ resource "azapi_resource" "aca_env" {
   parent_id = azurerm_resource_group.rg_name.id
   location  = azurerm_resource_group.rg_name.location
   name      = var.container_env
-  }
+  body   = jsonencode({
+      properties = {
+        appLogsConfiguration = {
+          destination               = "log-analytics"
+          logAnalyticsConfiguration = {
+            customerId = azurerm_log_analytics_workspace.log_storage.workspace_id
+            sharedKey  = azurerm_log_analytics_workspace.log_storage.primary_shared_key
+          }
+        }
+      }
+  })
+}
 
 resource "azapi_resource" "aca" {
   for_each = { for ca in var.container_apps : ca.name => ca }
@@ -46,22 +57,4 @@ resource "azurerm_log_analytics_workspace" "log_storage" {
   location            = azurerm_resource_group.rg_name.location
   sku                 = "PerGB2018"
   retention_in_days   = 90
-}
-resource "azapi_resource" "aca_log" {
-  type      = "Microsoft.App/managedEnvironments@2022-03-01"
-  parent_id = azurerm_resource_group.rg_name.id
-  location  = azurerm_resource_group.rg_name.location
-  name      = "aca-env-terraform"
-  
-  body   = jsonencode({
-    properties = {
-      appLogsConfiguration = {
-        destination               = "log-analytics"
-        logAnalyticsConfiguration = {
-          customerId = azurerm_log_analytics_workspace.log_storage.workspace_id
-          sharedKey  = azurerm_log_analytics_workspace.log_storage.primary_shared_key
-        }
-      }
-    }
- })
 }
